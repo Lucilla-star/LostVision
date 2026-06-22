@@ -8,37 +8,34 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import it.lostvision.model.Prodotto;
-import it.lostvision.model.ProdottoDAO;
-import it.lostvision.model.ProdottoDAOImpl;
+import it.lostvision.model.prodotto.ProdottoBean;
+import it.lostvision.model.prodotto.ProdottoDAO;
+import it.lostvision.model.prodotto.ProdottoDAOImpl;
 
 @WebServlet("/prodotto")
 public class DettaglioProdottoServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
-    private ProdottoDAO prodottoDAO = new ProdottoDAOImpl();
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String idProdotto = request.getParameter("id");
-        
-        if (idProdotto != null) {
-            try {
-                // Recuperiamo il singolo prodotto dal DB
-                Prodotto prodotto = prodottoDAO.doRetrieveByKey(idProdotto);
-                if (prodotto != null) {
-                    // Lo passiamo come attributo alla richiesta
-                    request.setAttribute("prodottoDettaglio", prodotto);
-                    request.getRequestDispatcher("/dettaglio.jsp").forward(request, response);
-                    return;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        // Se qualcosa va storto, torniamo al catalogo
-        response.sendRedirect(request.getContextPath() + "/catalogo");
-    }
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String idParam = request.getParameter("id");
+		if (idParam != null) {
+			try {
+				int idProdotto = Integer.parseInt(idParam);
+				ProdottoDAO dao = new ProdottoDAOImpl();
+				
+				ProdottoBean prodotto = dao.doRetrieveAll("").stream()
+						.filter(p -> p.getIdProdotto() == idProdotto)
+						.findFirst().orElse(null);
+				
+				request.setAttribute("prodotto", prodotto);
+			} catch (NumberFormatException | SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		request.getRequestDispatcher("/WEB-INF/dettaglio.jsp").forward(request, response);
+	}
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        doGet(request, response);
-    }
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
 }

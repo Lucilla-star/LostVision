@@ -9,45 +9,35 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import it.lostvision.model.Utente;
-import it.lostvision.model.UtenteDAO;
-import it.lostvision.model.UtenteDAOImpl;
+import it.lostvision.model.utente.UtenteBean;
+import it.lostvision.model.utente.UtenteDAO;
+import it.lostvision.model.utente.UtenteDAOImpl;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
-    
-    private UtenteDAO utenteDAO = new UtenteDAOImpl();
+	private static final long serialVersionUID = 1L;
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Se l'utente richiede la pagina di login tramite un link (GET), lo mandiamo semplicemente alla pagina jsp
-        request.getRequestDispatcher("/login.jsp").forward(request, response);
-    }
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		request.getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
+	}
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Quando l'utente preme il tasto "Accedi" nel form (POST), leggiamo i dati inviati
-        String email = request.getParameter("email");
-        String password = request.getParameter("password");
-        
-        try {
-            // Chiediamo al database se esiste un utente con questa email e password
-            Utente utente = utenteDAO.doRetrieveByLogin(email, password);
-            
-            if (utente != null) {
-                // LOGIN RIUSCITO: creiamo una sessione e salviamo l'oggetto utente dentro
-                HttpSession session = request.getSession();
-                session.setAttribute("utente", utente);
-                
-                // Lo reindirizziamo al catalogo del sito
-                response.sendRedirect(request.getContextPath() + "/catalogo");
-            } else {
-                // LOGIN FALLITO: rimandiamo l'utente alla pagina di login con un messaggio d'errore
-                request.setAttribute("errore", "Email o password errate. Riprova!");
-                request.getRequestDispatcher("/login.jsp").forward(request, response);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Errore durante il login sul database.");
-        }
-    }
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String email = request.getParameter("email");
+		String password = request.getParameter("password");
+		
+		UtenteDAO dao = new UtenteDAOImpl();
+		try {
+			UtenteBean utente = dao.doRetrieveByEmail(email);
+			if (utente != null && utente.getPassword().equals(password)) {
+				HttpSession session = request.getSession();
+				session.setAttribute("utente", utente);
+				response.sendRedirect(request.getContextPath() + "/catalogo");
+				return;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		request.setAttribute("errore", "Credenziali errate!");
+		request.getRequestDispatcher("/WEB-INF/login.jsp").forward(request, response);
+	}
 }
